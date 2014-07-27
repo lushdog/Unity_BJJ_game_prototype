@@ -3,16 +3,17 @@ using System.Collections;
 using System.Collections.Generic;
 using RootMotion.FinalIK;
 
+[System.Serializable]
 public class DummyBehaviour : MonoBehaviour {
 
     public int PlayerNumber;
 
     private List<MovePoint> movePoints;
+    public List<AttachPoint> attachPoints;
     private GameObject opponent;
 	private string state;
     private const float GRAB_COMPLETE_PROXIMITY = 0.01f;
     private const float HAND_GRAB_SPEED = 2.0f;
-
 
 
     public void SetState(string state)  
@@ -29,10 +30,10 @@ public class DummyBehaviour : MonoBehaviour {
 
     private void Start () 
     {
-        movePoints = InitMovePoints();
+        InitPoints();
 	}
 
-    private List<MovePoint> InitMovePoints()
+    private void InitPoints()
     {
         var ik = GetComponentInChildren<FullBodyBipedIK>();
 
@@ -45,16 +46,23 @@ public class DummyBehaviour : MonoBehaviour {
         MovePoint rightThigh = new MovePoint(ik.solver.rightThighEffector, FullBodyBipedEffector.RightThigh, body);
         MovePoint leftFoot = new MovePoint(ik.solver.leftFootEffector, FullBodyBipedEffector.LeftFoot, body);
         MovePoint rightFoot = new MovePoint(ik.solver.rightFootEffector, FullBodyBipedEffector.RightFoot, body);
-        return new List<MovePoint> { body, 
+        movePoints = new List<MovePoint> { body, 
                                     leftShoulder, rightShoulder, 
                                     leftHand, rightHand, 
                                     leftThigh, rightThigh, 
                                     leftFoot, rightFoot };
+
+        //TODO: Create rest of these
+        AttachPoint leftWrist = new AttachPoint(SearchHierarchyForBone(this.transform, "L Hand GP").gameObject, leftHand, AttachLocation.Wrist, AttachSide.Left, AttachDepth.Front);
+        AttachPoint rightWrist = new AttachPoint(SearchHierarchyForBone(this.transform, "R Hand GP").gameObject, rightHand, AttachLocation.Wrist, AttachSide.Right, AttachDepth.Front);
+        attachPoints = new List<AttachPoint> { leftWrist, rightWrist };
+
     }
-	
+
 	private void Update () 
     {
-		if (state == "PullGuard")
+	    //TODO: State machine
+        if (state == "PullGuard")
         {
             PullGuard();
         } 
@@ -64,26 +72,46 @@ public class DummyBehaviour : MonoBehaviour {
         } 
         else if (state == "Idle" && Input.GetKeyDown("space"))
         {
-            //if (PlayerNumber == 1)
-                SetState("GrabbingHand");
+            if (PlayerNumber == 1)
+                SetState("GrabbingLeftHand");
         } 
-        else if (state == "GrabbingHand")
+        else if (state == "GrabbingLeftHand")
         {
             GrabLeftWristWithRightHand();
-            GrabRightWristWithLeftHand();
         } 
+        else if (state == "GrabbedLeftHand" && Input.GetKeyDown("space"))
+        {
+            SetState("GrabbingRightHand");
+        } 
+        else if (state == "GrabbingRightHand")
+        {
+            GrabRightWristWithRightHand();
+        }
         else if (state == "Idle")
         {
             //isOffsetUpdate = null;
         }
+
+        //Debug.Log(state);
 	}
 
 	private void LateUpdate()  
     {
-		foreach (MovePoint mp in movePoints) 
+		
+        foreach (MovePoint mp in movePoints) 
 		{
             mp.Update();
 		}
+
+        foreach (AttachPoint ap in attachPoints)
+        {
+            if (ap.AttachedTo != null)
+            {
+                //TODO: slight hitch upon attach due to slight difference between position of attach point and grab complete prox.
+                ap.ClosestMovePoint.EffectorTargetPosition = ap.AttachedTo.EffectorTargetPosition;
+                ap.ClosestMovePoint.Update();
+            }
+        }
 	}
 
 	private void PullGuard() {
@@ -98,30 +126,53 @@ public class DummyBehaviour : MonoBehaviour {
 
 	private void GrabLeftWristWithRightHand()
 	{
-        var opponentLeftHand = SearchHierarchyForBone(opponent.transform, "L Hand GP");
-        Grab(movePoints.Find(x => x.EffectorType == FullBodyBipedEffector.RightHand), opponentLeftHand);
+        MovePoint grabber = movePoints.Find(x => x.EffectorType == FullBodyBipedEffector.RightHand);
+        AttachPoint target = opponent.GetComponent<DummyBehaviour>().attachPoints.Find
+            (x => (x.Location == AttachLocation.Wrist) && (x.Side == AttachSide.Left) && (x.Depth == AttachDepth.Front));
+        if (Grab(grabber, target))
+        {
+            SetState("GrabbedLeftHand");
+        }
 	}
+
+    private void GrabRightWristWithRightHand()
+    {
+        MovePoint grabber = movePoints.Find(x => x.EffectorType == FullBodyBipedEffector.RightHand);
+        AttachPoint target = opponent.GetComponent<DummyBehaviour>().attachPoints.Find
+            (x => (x.Location == AttachLocation.Wrist) && (x.Side == AttachSide.Right) && (x.Depth == AttachDepth.Front));
+        if (Grab(grabber, target))
+        {
+            SetState("GrabbedRightHand");
+        }
+    }
 
     private void GrabRightWristWithLeftHand()
     {
-        var opponentRightHand = SearchHierarchyForBone(opponent.transform, "R Hand GP");
-        Grab(movePoints.Find(x => x.EffectorType == FullBodyBipedEffector.LeftHand), opponentRightHand);
+        MovePoint grabber = movePoints.Find(x => x.EffectorType == FullBodyBipedEffector.LeftHand);
+        AttachPoint target = opponent.GetComponent<DummyBehaviour>().attachPoints.Find
+            (x => (x.Location == AttachLocation.Wrist) && (x.Side == AttachSide.Right) && (x.Depth == AttachDepth.Front));
+        if (Grab(grabber, target))
+        {
+            SetState("GrabbedLeftHand");
+        }
     }
 
-    private void Grab(MovePoint grabber, Transform target)
+    //TODO: Push() and Pull() /*like grab but no target on opponent's body*/
+    private bool Grab(MovePoint grabber, AttachPoint target)
     {
-        bool reachedTarget = Move(grabber, target);
+        bool reachedTarget = Move(grabber, target.AttachObject.transform);
         if (reachedTarget)
         {
-            SetState("Idle");
+            Debug.Log("Reached target Player " + PlayerNumber);
+            target.AttachedTo = grabber; 
         }
+        return reachedTarget;
     }
 
 	private bool Move(MovePoint movePoint, Transform target)  
     {
         if (Vector3.Distance(movePoint.Effector.position, target.position) < GRAB_COMPLETE_PROXIMITY)
         {
-            Debug.Log("Reached target Player " + PlayerNumber);
             return true;
         }
       

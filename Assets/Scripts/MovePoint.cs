@@ -2,14 +2,16 @@
 using RootMotion.FinalIK;
 using System.Collections;
 
-public class MovePoint : Object {
+[System.Serializable]
+public enum MoveType
+{
+    Offset, NonOffset, Idle
+}
+
+[System.Serializable]
+public class MovePoint {
 
     private IKEffector _effector;
-
-    public enum MoveType
-    {
-        Offset, NonOffset, Idle
-    }
 
     public FullBodyBipedEffector EffectorType
     {
