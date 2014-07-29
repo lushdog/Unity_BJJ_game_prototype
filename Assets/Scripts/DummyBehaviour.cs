@@ -8,22 +8,23 @@ public class DummyBehaviour : MonoBehaviour {
 
     public int PlayerNumber;
 
-    private List<MovePoint> movePoints;
+    private List<MovePoint> _movePoints;
     public List<AttachPoint> attachPoints;
-    private GameObject opponent;
-	private string state;
+    private GameObject _opponent;
+	private IState _state;
+
     private const float GRAB_COMPLETE_PROXIMITY = 0.01f;
     private const float HAND_GRAB_SPEED = 2.0f;
 
 
-    public void SetState(string state)  
+    public void SetState(IState state)  
     {
-		this.state = state;
+		_state = state;
 	}
 
 	public void SetOpponent(GameObject opponent)  
     {
-		this.opponent = opponent;
+		_opponent = opponent;
 	}
 
 	
@@ -46,7 +47,7 @@ public class DummyBehaviour : MonoBehaviour {
         MovePoint rightThigh = new MovePoint(ik.solver.rightThighEffector, FullBodyBipedEffector.RightThigh, body);
         MovePoint leftFoot = new MovePoint(ik.solver.leftFootEffector, FullBodyBipedEffector.LeftFoot, body);
         MovePoint rightFoot = new MovePoint(ik.solver.rightFootEffector, FullBodyBipedEffector.RightFoot, body);
-        movePoints = new List<MovePoint> { body, 
+        _movePoints = new List<MovePoint> { body, 
                                     leftShoulder, rightShoulder, 
                                     leftHand, rightHand, 
                                     leftThigh, rightThigh, 
@@ -62,32 +63,32 @@ public class DummyBehaviour : MonoBehaviour {
 	private void Update () 
     {
 	    //TODO: State machine
-        if (state == "PullGuard")
+        if (_state == "PullGuard")
         {
             PullGuard();
         } 
-        else if (state == "EnterGuard")
+        else if (_state == "EnterGuard")
         {
             EnterGuard();
         } 
-        else if (state == "Idle" && Input.GetKeyDown("space"))
+        else if (_state == "Idle" && Input.GetKeyDown("space"))
         {
             if (PlayerNumber == 1)
                 SetState("GrabbingLeftHand");
         } 
-        else if (state == "GrabbingLeftHand")
+        else if (_state == "GrabbingLeftHand")
         {
             GrabLeftWristWithRightHand();
         } 
-        else if (state == "GrabbedLeftHand" && Input.GetKeyDown("space"))
+        else if (_state == "GrabbedLeftHand" && Input.GetKeyDown("space"))
         {
             SetState("GrabbingRightHand");
         } 
-        else if (state == "GrabbingRightHand")
+        else if (_state == "GrabbingRightHand")
         {
             GrabRightWristWithRightHand();
         }
-        else if (state == "Idle")
+        else if (_state == "Idle")
         {
             //isOffsetUpdate = null;
         }
@@ -98,7 +99,7 @@ public class DummyBehaviour : MonoBehaviour {
 	private void LateUpdate()  
     {
 		
-        foreach (MovePoint mp in movePoints) 
+        foreach (MovePoint mp in _movePoints) 
 		{
             mp.Update();
 		}
@@ -126,8 +127,8 @@ public class DummyBehaviour : MonoBehaviour {
 
 	private void GrabLeftWristWithRightHand()
 	{
-        MovePoint grabber = movePoints.Find(x => x.EffectorType == FullBodyBipedEffector.RightHand);
-        AttachPoint target = opponent.GetComponent<DummyBehaviour>().attachPoints.Find
+        MovePoint grabber = _movePoints.Find(x => x.EffectorType == FullBodyBipedEffector.RightHand);
+        AttachPoint target = _opponent.GetComponent<DummyBehaviour>().attachPoints.Find
             (x => (x.Location == AttachLocation.Wrist) && (x.Side == AttachSide.Left) && (x.Depth == AttachDepth.Front));
         if (Grab(grabber, target))
         {
@@ -137,8 +138,8 @@ public class DummyBehaviour : MonoBehaviour {
 
     private void GrabRightWristWithRightHand()
     {
-        MovePoint grabber = movePoints.Find(x => x.EffectorType == FullBodyBipedEffector.RightHand);
-        AttachPoint target = opponent.GetComponent<DummyBehaviour>().attachPoints.Find
+        MovePoint grabber = _movePoints.Find(x => x.EffectorType == FullBodyBipedEffector.RightHand);
+        AttachPoint target = _opponent.GetComponent<DummyBehaviour>().attachPoints.Find
             (x => (x.Location == AttachLocation.Wrist) && (x.Side == AttachSide.Right) && (x.Depth == AttachDepth.Front));
         if (Grab(grabber, target))
         {
@@ -148,8 +149,8 @@ public class DummyBehaviour : MonoBehaviour {
 
     private void GrabRightWristWithLeftHand()
     {
-        MovePoint grabber = movePoints.Find(x => x.EffectorType == FullBodyBipedEffector.LeftHand);
-        AttachPoint target = opponent.GetComponent<DummyBehaviour>().attachPoints.Find
+        MovePoint grabber = _movePoints.Find(x => x.EffectorType == FullBodyBipedEffector.LeftHand);
+        AttachPoint target = _opponent.GetComponent<DummyBehaviour>().attachPoints.Find
             (x => (x.Location == AttachLocation.Wrist) && (x.Side == AttachSide.Right) && (x.Depth == AttachDepth.Front));
         if (Grab(grabber, target))
         {
@@ -196,7 +197,7 @@ public class DummyBehaviour : MonoBehaviour {
 
 	private void Pose(Transform targets)  
     {
-        foreach (MovePoint mp in movePoints)
+        foreach (MovePoint mp in _movePoints)
         {
             var target = SearchHierarchyForBone(targets, mp.Effector.bone.name);
             mp.EffectorTargetPosition = target.position;

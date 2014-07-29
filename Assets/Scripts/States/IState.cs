@@ -10,43 +10,49 @@ public interface IState
         set;
     } 
 
-    void OnEnterState(); 
-    void InState();
-    void ExitState();
+    void TransitionTo(IState state);
+    void TransitionFrom(IState state);
+    void Update();
 }
 
-public class IdleState : IState
+public abstract class StateBase : IState
 {
-    public void OnEnterState ()
+    public List<IState> SubStates 
     {
-        throw new System.NotImplementedException ();
+        get;
+        set;
+    } 
+
+    public void TransitionTo(IState state)
+    {
+        OnExit(state);
+        state.TransitionFrom(this);
     }
 
-    public void InState ()
+    public void TransitionFrom(IState state)
     {
-        throw new System.NotImplementedException ();
+        OnEnter(state);
     }
 
-    public void ExitState ()
-    {
-        throw new System.NotImplementedException ();
-    }
+    protected abstract void OnEnter(IState previousState);
+    protected abstract void OnExit (IState nextState);
 }
 
-public class GrabbingState : IState
+public class IdleState : StateBase
 {
-    public void OnEnterState ()
+    protected override void OnEnter (IState previousState)
     {
         throw new System.NotImplementedException ();
     }
 
-    public void InState ()
+    protected override void OnExit (IState nextState)
     {
         throw new System.NotImplementedException ();
     }
 
-    public void ExitState ()
+    public void Update ()
     {
         throw new System.NotImplementedException ();
     }
 }
+
