@@ -16,12 +16,16 @@ public class GameController : MonoBehaviour {
 		Renderer renderer = (Renderer)_player2.GetComponentsInChildren<Renderer>()[0];
 		renderer.material.color = new Color(0, 1, 1, 1);
 
-		_player1.GetComponent<DummyBehaviour>().SetState("PullGuard");
-		_player2.GetComponent<DummyBehaviour>().SetState("EnterGuard");
-		_player1.GetComponent<DummyBehaviour>().SetOpponent(_player2);
-        _player1.GetComponent<DummyBehaviour>().PlayerNumber = 1;
-        _player2.GetComponent<DummyBehaviour>().PlayerNumber = 2;
-		_player2.GetComponent<DummyBehaviour>().SetOpponent(_player1);
+        DummyBehaviour player1script = _player1.GetComponent<DummyBehaviour>();
+        DummyBehaviour player2script = _player2.GetComponent<DummyBehaviour>();
+        player1script.SetOpponent(_player2);
+        player1script.PlayerNumber = 1;
+        player2script.PlayerNumber = 2;
+        player2script.SetOpponent(_player1);
+
+        player1script.SetState(player1script.States.Find(x => x is PullingGuard));
+        player2script.SetState(player2script.States.Find(x => x is EnteringGuard));
+
 	
 	}
 	

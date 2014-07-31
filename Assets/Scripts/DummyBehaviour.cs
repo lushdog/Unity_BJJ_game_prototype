@@ -7,19 +7,32 @@ using RootMotion.FinalIK;
 public class DummyBehaviour : MonoBehaviour {
 
     public int PlayerNumber;
+    public List<AttachPoint> AttachPoints;
+    public List<IState> States;
 
     private List<MovePoint> _movePoints;
-    public List<AttachPoint> attachPoints;
     private GameObject _opponent;
-	private IState _state;
+	private IState _currentState;
 
     private const float GRAB_COMPLETE_PROXIMITY = 0.01f;
     private const float HAND_GRAB_SPEED = 2.0f;
 
+    public void DebugLog(string message)
+    {
+        Debug.Log("Player" + PlayerNumber + ":" + message);
+    }
 
     public void SetState(IState state)  
     {
-		_state = state;
+		if (_currentState != null)
+        {
+            _currentState.TransitionTo(state);
+        } 
+        else
+        {
+            state.TransitionFrom(null);
+        }
+        _currentState = state;
 	}
 
 	public void SetOpponent(GameObject opponent)  
@@ -27,12 +40,26 @@ public class DummyBehaviour : MonoBehaviour {
 		_opponent = opponent;
 	}
 
-	
-
-    private void Start () 
+    private void Awake()
     {
         InitPoints();
+        InitStates();
+    }
+	
+    private void Start () 
+    {
+        if (_currentState == null)
+            SetState(States.Find(x => x is IdleState));
 	}
+
+    private void InitStates()
+    {
+        IdleState idle = new IdleState(this);
+        GrabbingState grab = new GrabbingState(this);
+        PullingGuard pullingGuard = new PullingGuard(this);
+        EnteringGuard enteringGuard = new EnteringGuard(this);
+        States = new List<IState> { idle, grab, pullingGuard, enteringGuard };
+    }
 
     private void InitPoints()
     {
@@ -56,44 +83,24 @@ public class DummyBehaviour : MonoBehaviour {
         //TODO: Create rest of these
         AttachPoint leftWrist = new AttachPoint(SearchHierarchyForBone(this.transform, "L Hand GP").gameObject, leftHand, AttachLocation.Wrist, AttachSide.Left, AttachDepth.Front);
         AttachPoint rightWrist = new AttachPoint(SearchHierarchyForBone(this.transform, "R Hand GP").gameObject, rightHand, AttachLocation.Wrist, AttachSide.Right, AttachDepth.Front);
-        attachPoints = new List<AttachPoint> { leftWrist, rightWrist };
+        AttachPoints = new List<AttachPoint> { leftWrist, rightWrist };
 
     }
 
 	private void Update () 
     {
-	    //TODO: State machine
-        if (_state == "PullGuard")
-        {
-            PullGuard();
-        } 
-        else if (_state == "EnterGuard")
-        {
-            EnterGuard();
-        } 
-        else if (_state == "Idle" && Input.GetKeyDown("space"))
+	   
+        //input manager
+        if (_currentState is IdleState && Input.GetKeyDown("space"))
         {
             if (PlayerNumber == 1)
-                SetState("GrabbingLeftHand");
+            {
+                SetState(States.Find(x => x is GrabbingState));
+            }
         } 
-        else if (_state == "GrabbingLeftHand")
-        {
-            GrabLeftWristWithRightHand();
-        } 
-        else if (_state == "GrabbedLeftHand" && Input.GetKeyDown("space"))
-        {
-            SetState("GrabbingRightHand");
-        } 
-        else if (_state == "GrabbingRightHand")
-        {
-            GrabRightWristWithRightHand();
-        }
-        else if (_state == "Idle")
-        {
-            //isOffsetUpdate = null;
-        }
-
-        //Debug.Log(state);
+       
+        _currentState.Update();
+        //DebugLog(state);
 	}
 
 	private void LateUpdate()  
@@ -104,7 +111,7 @@ public class DummyBehaviour : MonoBehaviour {
             mp.Update();
 		}
 
-        foreach (AttachPoint ap in attachPoints)
+        foreach (AttachPoint ap in AttachPoints)
         {
             if (ap.AttachedTo != null)
             {
@@ -115,46 +122,46 @@ public class DummyBehaviour : MonoBehaviour {
         }
 	}
 
-	private void PullGuard() {
+	public void PullGuard() {
 		Pose(this.transform.Find("Positions/GuardTop").transform);
-		SetState("Idle");
+		SetState(States.Find(x => x is IdleState));
 	}
 	
-	private void EnterGuard() {
+	public void EnterGuard() {
 		Pose(this.transform.Find("Positions/GuardBottom").transform);
-		SetState("Idle");
+        SetState(States.Find(x => x is IdleState));
 	}
 
-	private void GrabLeftWristWithRightHand()
+    public void GrabLeftWristWithRightHand()
 	{
         MovePoint grabber = _movePoints.Find(x => x.EffectorType == FullBodyBipedEffector.RightHand);
-        AttachPoint target = _opponent.GetComponent<DummyBehaviour>().attachPoints.Find
+        AttachPoint target = _opponent.GetComponent<DummyBehaviour>().AttachPoints.Find
             (x => (x.Location == AttachLocation.Wrist) && (x.Side == AttachSide.Left) && (x.Depth == AttachDepth.Front));
         if (Grab(grabber, target))
         {
-            SetState("GrabbedLeftHand");
+            SetState(States.Find(x => x is IdleState));
         }
 	}
 
-    private void GrabRightWristWithRightHand()
+    public void GrabRightWristWithRightHand()
     {
         MovePoint grabber = _movePoints.Find(x => x.EffectorType == FullBodyBipedEffector.RightHand);
-        AttachPoint target = _opponent.GetComponent<DummyBehaviour>().attachPoints.Find
+        AttachPoint target = _opponent.GetComponent<DummyBehaviour>().AttachPoints.Find
             (x => (x.Location == AttachLocation.Wrist) && (x.Side == AttachSide.Right) && (x.Depth == AttachDepth.Front));
         if (Grab(grabber, target))
         {
-            SetState("GrabbedRightHand");
+            SetState(States.Find(x => x is IdleState));
         }
     }
 
-    private void GrabRightWristWithLeftHand()
+    public void GrabRightWristWithLeftHand()
     {
         MovePoint grabber = _movePoints.Find(x => x.EffectorType == FullBodyBipedEffector.LeftHand);
-        AttachPoint target = _opponent.GetComponent<DummyBehaviour>().attachPoints.Find
+        AttachPoint target = _opponent.GetComponent<DummyBehaviour>().AttachPoints.Find
             (x => (x.Location == AttachLocation.Wrist) && (x.Side == AttachSide.Right) && (x.Depth == AttachDepth.Front));
         if (Grab(grabber, target))
         {
-            SetState("GrabbedLeftHand");
+            SetState(States.Find(x => x is IdleState));
         }
     }
 
@@ -164,7 +171,7 @@ public class DummyBehaviour : MonoBehaviour {
         bool reachedTarget = Move(grabber, target.AttachObject.transform);
         if (reachedTarget)
         {
-            Debug.Log("Reached target Player " + PlayerNumber);
+            DebugLog("Reached target Player " + PlayerNumber);
             target.AttachedTo = grabber; 
         }
         return reachedTarget;
