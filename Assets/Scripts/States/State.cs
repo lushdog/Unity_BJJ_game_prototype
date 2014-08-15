@@ -6,6 +6,7 @@ public abstract class State : IState
 {
     protected Dictionary<BjjState, State> _subStates;
     protected BjjPlayer _bjjPlayer;
+    protected InputBinding _input;
 
     public void TransitionTo(IState nextState)
     {
@@ -22,6 +23,7 @@ public abstract class State : IState
     {
         _bjjPlayer = bjjPlayer;
         _subStates = subStates;
+        _input = bjjPlayer.InputBinding;
     }
 
     //TODO: support sub-states in Update()

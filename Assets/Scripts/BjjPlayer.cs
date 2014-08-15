@@ -14,6 +14,7 @@ public class BjjPlayer : MonoBehaviour {
     public BjjState CurrentState = BjjState.Null;
     public BjjPlayer Opponent;
     public BjjMovementManager MovementManager;
+    public InputBinding InputBinding;
    
     public void DebugLog(string message)
     {
@@ -37,6 +38,9 @@ public class BjjPlayer : MonoBehaviour {
     private void Awake()
     {
         MovementManager = new BjjMovementManager(this);
+
+        InputBinding = new KeyboardInputBinding(PlayerNumber);
+
         IdleState idle = new IdleState(this, null);
         GrabbingState grab = new GrabbingState(this, null);
         PullGuardState pullingGuard = new PullGuardState(this, null);
@@ -46,7 +50,8 @@ public class BjjPlayer : MonoBehaviour {
             {BjjState.Idle, idle}, 
             {BjjState.Grab, grab}, 
             {BjjState.PullingGuard, pullingGuard}, 
-            {BjjState.EnteringGuard, enteringGuard} };
+            {BjjState.EnteringGuard, enteringGuard} 
+        };
     }
 	
     private void Start () 
@@ -56,15 +61,6 @@ public class BjjPlayer : MonoBehaviour {
 
    	private void Update () 
     {
-        //TODO:move to Idle states, add input manager to state manager
-        if (CurrentState == BjjState.Idle && Input.GetKeyDown("space"))
-        {
-            if (PlayerNumber == 1)
-            {
-                SetState(BjjState.Grab);
-            }
-        } 
-       
         States[CurrentState].Update();
 	}
 

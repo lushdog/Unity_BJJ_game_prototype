@@ -6,17 +6,17 @@ public class EnterGuardState : State
 {
     protected override void OnEnter (IState previousState)
     {
-        _bjjPlayer.DebugLog("EnterGuardState OnEnter");
+        //_bjjPlayer.DebugLog("EnterGuardState OnEnter");
     }
     
     protected override void OnExit (IState nextState)
     {
-        _bjjPlayer.DebugLog("EnterGuardState OnExit");
+        //_bjjPlayer.DebugLog("EnterGuardState OnExit");
     }
     
     public override void Update ()
     {
-        _bjjPlayer.DebugLog("EnterGuardState Update");
+        //_bjjPlayer.DebugLog("EnterGuardState Update");
         _bjjPlayer.MovementManager.EnterGuard();
     }
     

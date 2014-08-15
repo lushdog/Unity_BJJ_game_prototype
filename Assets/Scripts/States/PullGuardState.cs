@@ -6,17 +6,17 @@ public class PullGuardState : State
 {
     protected override void OnEnter (IState previousState)
     {
-        _bjjPlayer.DebugLog("PullingGuard OnEnter");
+        //_bjjPlayer.DebugLog("PullingGuard OnEnter");
     }
     
     protected override void OnExit (IState nextState)
     {
-        _bjjPlayer.DebugLog("PullingGuard OnExit");
+        //_bjjPlayer.DebugLog("PullingGuard OnExit");
     }
     
     public override void Update ()
     {
-        _bjjPlayer.DebugLog("PullingGuard Update");
+        //_bjjPlayer.DebugLog("PullingGuard Update");
         _bjjPlayer.MovementManager.PullGuard();
     }
     
