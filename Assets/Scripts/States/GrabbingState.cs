@@ -17,7 +17,7 @@ public class GrabbingState : State
     public override void Update ()
     {
         //_bjjPlayer.DebugLog("GrabbingState Update");
-        _bjjPlayer.MovementManager.GrabLeftWristWithRightHand();
+        _bjjPlayer.MovementManager.Grab(_bjjPlayer.MovementManager.rightHand, _bjjPlayer.Opponent.MovementManager.leftHand, BodyPointLocation.Front);
     }
     
     public GrabbingState(BjjPlayer bjjPlayer, Dictionary<BjjState, State> subStates) : base(bjjPlayer, subStates)

@@ -19,7 +19,7 @@ public class IdleState : State
         //_bjjPlayer.DebugLog("IdleState Update");
         if (_input.IsInputActive(Control.RightArm))
         {
-            if (_bjjPlayer.PlayerNumber == 1)
+            if (_bjjPlayer.PlayerNumber == 2)
             {
                 _bjjPlayer.SetState(BjjState.Grab);
             }

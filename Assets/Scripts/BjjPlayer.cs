@@ -18,7 +18,7 @@ public class BjjPlayer : MonoBehaviour {
    
     public void DebugLog(string message)
     {
-        Debug.Log("Player" + PlayerNumber + ":" + message);
+        Debug.Log("Player" + PlayerNumber + " @ frame # " + Time.frameCount + ":" + message);
     }
 
     public void SetState(BjjState state)  
@@ -38,7 +38,6 @@ public class BjjPlayer : MonoBehaviour {
     private void Awake()
     {
         MovementManager = new BjjMovementManager(this);
-
         InputBinding = new KeyboardInputBinding(PlayerNumber);
 
         IdleState idle = new IdleState(this, null);
@@ -68,6 +67,4 @@ public class BjjPlayer : MonoBehaviour {
     {
         MovementManager.Update();
 	}
-
-
 }

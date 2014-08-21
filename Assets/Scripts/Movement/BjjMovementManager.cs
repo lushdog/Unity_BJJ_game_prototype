@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using RootMotion.FinalIK;
 
 public class BjjMovementManager : MovementManager 
 {	
@@ -11,43 +12,50 @@ public class BjjMovementManager : MovementManager
 
     public void PullGuard() 
     {
-        Pose(_player.transform.Find("Positions/GuardTop").transform);
+        Pose(_player.transform.Find("Positions/GuardBottom").transform);
         _player.SetState(BjjState.Idle);
     }
     
     public void EnterGuard() 
     {
-        Pose(_player.transform.Find("Positions/GuardBottom").transform);
+        Pose(_player.transform.Find("Positions/GuardTop").transform);
         _player.SetState(BjjState.Idle);
     }
-    
-    public void GrabLeftWristWithRightHand()
+
+    //TODO P1: Grab method 
+    public void Grab(BodyPoint grabbingPoint, BodyPoint grabbedPoint, BodyPointLocation location)
     {
-        MovePoint grabber = MovePoints[BodyPart.RightHand];
-        AttachPoint target = _player.Opponent.MovementManager.AttachPoints[BodyPart.LeftWrist];
+        if (!_is.IsInInteraction(grabbingPoint.Effector))
+        {
+            Debug.Log("Start interaction...");
+            InteractionObject interactionObject = grabbedPoint.GetInteractionObject(location);
+            grabbingPoint.MovementType = MovementType.Interaction;
+            _is.StartInteraction(grabbingPoint.Effector, interactionObject, true);
+            Debug.DrawLine(rightHand.GameObject.transform.position, interactionObject.transform.position, Color.white);
+        }
+        else if (_is.IsPaused(grabbingPoint.Effector))
+        {
+            Debug.Log("Interaction paused...");
+            grabbingPoint.MovementType = MovementType.None;
+            _player.SetState(BjjState.Idle);
+        } 
+        else
+        {
+            Debug.Log("Interaction update...");
+        }
+
+    }
+    
+    /*
+    public void MoveRightHandUp()
+    {
+        var rightHand = BodyPoints[BodyPart.RightHand];
+        var target = rightHand.
         if (Grab(grabber, target))
         {
             _player.SetState(BjjState.Idle);
         }
     }
-    
-    public void GrabRightWristWithRightHand()
-    {
-        MovePoint grabber = MovePoints[BodyPart.RightHand];
-        AttachPoint target = _player.Opponent.MovementManager.AttachPoints[BodyPart.RightWrist];
-        if (Grab(grabber, target))
-        {
-            _player.SetState(BjjState.Idle);
-        }
-    }
-    
-    public void GrabRightWristWithLeftHand()
-    {
-        MovePoint grabber = MovePoints[BodyPart.RightWrist];
-        AttachPoint target = _player.Opponent.MovementManager.AttachPoints[BodyPart.LeftHand];
-        if (Grab(grabber, target))
-        {
-            _player.SetState(BjjState.Idle);
-        }
-    }
+    */
+
 }

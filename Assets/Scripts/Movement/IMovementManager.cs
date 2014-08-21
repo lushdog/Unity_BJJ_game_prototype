@@ -5,6 +5,6 @@ public interface IMovementManager
 {
     void Update();
     void Pose(Transform targets);
-    bool Move(MovePoint movePoint, Transform target);
-    bool Grab(MovePoint grabber, AttachPoint target);	
+    bool Move(BodyPoint movePoint, Transform target);
+    //bool Grab(MovePoint grabber, AttachPoint target);	
 }
