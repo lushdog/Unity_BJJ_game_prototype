@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using RootMotion.FinalIK;
 
+
 public enum BodyPointLocation { Front, Back, Left, Right }
 
 public abstract class MovementManager : IMovementManager
@@ -42,10 +43,18 @@ public abstract class MovementManager : IMovementManager
     {
         foreach (BodyPoint bp in BodyPoints) 
         {
+            var effector = _ik.solver.GetEffector(bp.Effector);
             if (bp.MovementType == MovementType.Absolute)
             {
-                var effector = _ik.solver.GetEffector(bp.Effector);
                 effector.position = bp.EffectorTargetPosition;
+                effector.positionWeight = bp.EffectorTargetPositionWeight;
+                effector.rotation = bp.EffectorTargetRotation;
+                effector.rotationWeight = bp.EffectorTargetRotationWeight;
+                bp.MovementType = MovementType.None;
+            }
+            else if (bp.MovementType == MovementType.Offset)
+            {
+                effector.positionOffset += bp.EffectorTargetPosition;
                 effector.positionWeight = bp.EffectorTargetPositionWeight;
                 effector.rotation = bp.EffectorTargetRotation;
                 effector.rotationWeight = bp.EffectorTargetRotationWeight;
@@ -84,28 +93,42 @@ public abstract class MovementManager : IMovementManager
         
         return false;
     }
-    
-    public void Pose(Transform targets)  
+
+    public void Pose(Transform targets) 
     {
-        foreach (BodyPoint bp in BodyPoints)
+        if (targets == null)
+            throw new NullReferenceException("Pose targets are null.");
+
+        //TODO(1): need to move effectors to new bone positions but not affect targets when effector is moved 
+        List<Transform> bones = new List<Transform>();
+        GetBones(targets, bones);
+        
+        foreach (Transform target in bones)
         {
-            var bone = _ik.solver.GetEffector(bp.Effector).bone;
+            if (target == null)
+                throw new NullReferenceException("Null target found in Pose() targets.");
 
-            if (bone == null)
-                throw new NullReferenceException(bp.Effector + " does not have a bone.");
+            var current = SearchHierarchyForBone(_player.transform, target.name);
+            if (current == null)
+                throw new NullReferenceException("No match for " + target.name + " target in player bones.");
 
-            if (bone.name == null)
-                throw new NullReferenceException(bone.ToString() + " bone does not have a name.");
-
-            var target = SearchHierarchyForBone(targets, bone.name);
-            bp.EffectorTargetPosition = target.position;
-            bp.EffectorTargetRotation = target.rotation;
-            bp.EffectorTargetPositionWeight = 1.0f;
-            bp.EffectorTargetRotationWeight = 1.0f;
-            bp.MovementType = MovementType.Absolute;
+            //Debug.Log("Found match for " + target.name + " .");
+            current.transform.position = target.position;
+            current.transform.rotation = target.rotation;
         }
     }
-    
+
+    private void GetBones(Transform current, List<Transform> bones)
+    {
+        bones.Add(current);
+        for (int i = 0; i < current.childCount; ++i)
+        {
+            var child = current.GetChild(i);
+            bones.Add(child);
+            GetBones(child, bones);
+        }
+    }
+
     private Transform SearchHierarchyForBone(Transform current, string name)   
     {
         if ((current.name.Contains(name) || current.name == name))
@@ -119,25 +142,4 @@ public abstract class MovementManager : IMovementManager
         }
         return null;
     }
-
-    private FullBodyBipedEffector GetParentEffector(FullBodyBipedEffector childEffector)
-    {
-        if (childEffector == FullBodyBipedEffector.Body)
-        {
-            throw new ArgumentException("Body effector has no parent effector.");
-        }
-
-        FullBodyBipedEffector parentEffector = FullBodyBipedEffector.Body;
-        if (childEffector == FullBodyBipedEffector.LeftHand)
-            parentEffector = FullBodyBipedEffector.LeftShoulder;
-        else if (childEffector == FullBodyBipedEffector.RightHand)
-            parentEffector = FullBodyBipedEffector.RightShoulder;
-        else if (childEffector == FullBodyBipedEffector.LeftFoot)
-            parentEffector = FullBodyBipedEffector.LeftThigh;
-        else if (childEffector == FullBodyBipedEffector.RightFoot)
-            parentEffector = FullBodyBipedEffector.RightThigh;
-
-        return parentEffector;
-    }
-
 }

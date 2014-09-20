@@ -22,7 +22,6 @@ public class BjjMovementManager : MovementManager
         _player.SetState(BjjState.Idle);
     }
 
-    //TODO P1: Grab method 
     public void Grab(BodyPoint grabbingPoint, BodyPoint grabbedPoint, BodyPointLocation location)
     {
         if (!_is.IsInInteraction(grabbingPoint.Effector))
@@ -31,7 +30,7 @@ public class BjjMovementManager : MovementManager
             InteractionObject interactionObject = grabbedPoint.GetInteractionObject(location);
             grabbingPoint.MovementType = MovementType.Interaction;
             _is.StartInteraction(grabbingPoint.Effector, interactionObject, true);
-            Debug.DrawLine(rightHand.GameObject.transform.position, interactionObject.transform.position, Color.white);
+            Debug.DrawLine(grabbingPoint.GameObject.transform.position, interactionObject.transform.position, Color.white);
         }
         else if (_is.IsPaused(grabbingPoint.Effector))
         {
@@ -45,17 +44,4 @@ public class BjjMovementManager : MovementManager
         }
 
     }
-    
-    /*
-    public void MoveRightHandUp()
-    {
-        var rightHand = BodyPoints[BodyPart.RightHand];
-        var target = rightHand.
-        if (Grab(grabber, target))
-        {
-            _player.SetState(BjjState.Idle);
-        }
-    }
-    */
-
 }
